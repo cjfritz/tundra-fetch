@@ -7,6 +7,14 @@ export const WILDCARD_MARKER = '{{*}}';
 export const UNQUOTED_MARKER_PLACEHOLDER = '"%{{*}}%"';
 export const UNQUOTED_MARKER_PLACEHOLDER_REGEX = /"%\{\{\*\}\}%"/g;
 
+export const getIsMatch = (source, target) => {
+  const wildcardedSource = source
+    .replace(new RegExp(escapeRegExp('*'), 'g'), '\\*')
+    .replace(new RegExp(escapeRegExp(WILDCARD_MARKER_ESCAPED), 'g'), '*');
+
+  return matcher.isMatch(target, wildcardedSource);
+};
+
 export const recursiveKeySort = (data) => {
   if (data && isObject(data)) {
     const sortedData = {};
@@ -26,13 +34,16 @@ export default (source, target, shouldSortObjectKeys = false) => {
     return source === target;
   }
 
-  let processedSource = source;
-  let processedTarget = target;
+  const isMatching = getIsMatch(source, target);
 
-  if (shouldSortObjectKeys && processedSource && processedTarget) {
+  if (isMatching) {
+    return true;
+  }
+
+  if (shouldSortObjectKeys && source && target) {
     try {
-      processedSource = `${processedSource}`;
-      processedTarget = `${processedTarget}`;
+      let processedSource = `${source}`;
+      let processedTarget = `${target}`;
 
       processedSource = processedSource.replace(/\{\{\*\}\}(?!")/g, UNQUOTED_MARKER_PLACEHOLDER);
 
@@ -45,15 +56,9 @@ export default (source, target, shouldSortObjectKeys = false) => {
       processedSource = processedSource.replace(UNQUOTED_MARKER_PLACEHOLDER_REGEX, WILDCARD_MARKER);
       processedTarget = processedTarget.replace(UNQUOTED_MARKER_PLACEHOLDER_REGEX, WILDCARD_MARKER);
 
+      return getIsMatch(processedSource, processedTarget);
     } catch (e) {
-      processedSource = source;
-      processedTarget = target;
+      return false;
     }
   }
-
-  const wildcardedSource = processedSource
-    .replace(new RegExp(escapeRegExp('*'), 'g'), '\\*')
-    .replace(new RegExp(escapeRegExp(WILDCARD_MARKER_ESCAPED), 'g'), '*');
-
-  return matcher.isMatch(processedTarget, wildcardedSource);
 };
