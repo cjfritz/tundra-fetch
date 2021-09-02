@@ -1,6 +1,7 @@
-const isString = value => typeof value === 'string' || value instanceof String;
-
-const isObject = value => typeof value === 'object' || value instanceof Object;
+import {
+  isObject,
+  isString,
+} from './helpers';
 
 export default function (fetchParams) {
   const singleParameter = fetchParams && fetchParams.length === 1;
