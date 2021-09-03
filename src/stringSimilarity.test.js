@@ -1,4 +1,7 @@
-import stringSimilarity, { recursiveKeySort } from './stringSimilarity';
+import stringSimilarity, {
+  recursiveKeySort,
+  replaceWildcards,
+} from './stringSimilarity';
 
 describe('stringSimilarity', () => {
   const WILDCARD = '{{*}}';
@@ -21,77 +24,135 @@ describe('stringSimilarity', () => {
         ],
         aProp: {
           someProp: { yetAnotherProp: null, anotherProp: true },
-          a: 'a'
+          a: 'a',
         },
         prop1: 'prop1',
-      }
+      };
 
       const expectedResult = {
-        aProp: { 
+        aProp: {
           a: 'a',
-          someProp: { anotherProp: true, yetAnotherProp: null }
+          someProp: { anotherProp: true, yetAnotherProp: null },
         },
         prop1: 'prop1',
-        someArray: [ 'something', { anotherProp: 1, someProp: 'someProp', z: undefined } ]
+        someArray: ['something', { anotherProp: 1, someProp: 'someProp', z: undefined }],
       };
 
       expect(recursiveKeySort(param)).toStrictEqual(expectedResult);
     });
   });
 
-  describe.each([true, false])('when shouldSortObjectKeys is %s', shouldSortObjectKeys => {
+  describe('replaceWildcards', () => {
+    it.each([true, false])('returns the original value argument when no matches are found', (makeParsable) => {
+      const value = 'some string without wildcards';
+      expect(replaceWildcards(value, makeParsable)).toBe(value);
+    });
+
+    describe('when replacing unquoted wildcards', () => {
+      it('should find and replace all unquoted wildcards properly', () => {
+        const value = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, "d": 123{{*}}456, "e": "abc{{*}}123"}';
+        const expectedResult = '{'
+          + '"a":"%{{*}}%", "b":"%{{*}}%123", "c":"123%{{*}}%", "d":"123%{{*}}%456", "e": "abc{{*}}123"'
+          + '}';
+        expect(replaceWildcards(value, true)).toEqual(expectedResult);
+      });
+    });
+
+    describe('when replacing quoted wildcard placeholders', () => {
+      const value = '{"a":"%{{*}}%", "b":"%{{*}}%123", "c":"123%{{*}}%", "d":"123%{{*}}%456", "e": "abc{{*}}123"}';
+      const expectedResult = '{"a":{{*}}, "b":{{*}}123, "c":123{{*}}, "d":123{{*}}456, "e": "abc{{*}}123"}';
+      expect(replaceWildcards(value)).toEqual(expectedResult);
+    });
+  });
+
+  describe.each([true, false])('when shouldSortObjectKeys is %s', (shouldSortObjectKeys) => {
     it('should match a target with a valid pattern', () => {
-      console.log('test 1');
       expect(stringSimilarity(`before${WILDCARD}after`, 'beforesomethingafter', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match a target with a valid pattern at the beginning', () => {
-      console.log('test 2');
       expect(stringSimilarity(`${WILDCARD}after`, 'somethingafter', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match a target with a valid pattern at the end', () => {
       expect(stringSimilarity(`before${WILDCARD}`, 'beforesomething', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match a target without populated pattern', () => {
       expect(stringSimilarity(`before${WILDCARD}after`, 'beforeafter', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match a target against a source without a wildcard', () => {
       expect(stringSimilarity('string1', 'string1', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should not match a target against a source without a wildcard', () => {
       expect(stringSimilarity('string1', 'string2', shouldSortObjectKeys)).toBe(false);
     });
-  
+
     it('should not match a target with an empty source', () => {
       expect(stringSimilarity('', 'something', shouldSortObjectKeys)).toBe(false);
     });
-  
+
     it('should match an empty target against a wildcarded source', () => {
       expect(stringSimilarity(`${WILDCARD}`, '', shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match an null target against a wildcarded source', () => {
       expect(stringSimilarity(`${WILDCARD}`, null, shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should match if the source and target are both null', () => {
       expect(stringSimilarity(null, null, shouldSortObjectKeys)).toBe(true);
     });
-  
+
     it('should not match if the source and target are undefined and null', () => {
       expect(stringSimilarity(null, undefined, shouldSortObjectKeys)).toBe(false);
     });
-  
+
     it('should not match if the source and target are undefined and null', () => {
       expect(stringSimilarity(null, 'something', shouldSortObjectKeys)).toBe(false);
     });
   });
 
-  it('should match source and target if they are valid JSON request bodies', () => {
-    
+  describe('when source and target are valid JSON request bodies and shouldSortObjectKeys is true', () => {
+    describe('when wildcards are present in source', () => {
+      it('should not match when a wildcard is detected in a property key', () => {
+        const source = '{ "some{{*}}": "someValue", "someOtherKey": "someOtherValue" }';
+        const target = '{ "someKey": "someValue" }';
+
+        expect(stringSimilarity(source, target, true)).toBe(false);
+      });
+
+      it('should match when source and target are equivalent', () => {
+        const source = '{ "someOtherKey": "some{{*}}Value", "someKey": "{{*}}" }';
+        const target = '{ "someKey": "someValue", "someOtherKey": "someOtherValue" }';
+
+        expect(stringSimilarity(source, target, true)).toBe(true);
+      });
+
+      it('should not match when source and target are not equivalent', () => {
+        const source = '{ "someOtherKey": "some{{*}}Value", "someKey": "{{*}}" }';
+        const target = '{ "someKey": "someValue", "someOtherKey": "somethingDifferent" }';
+
+        expect(stringSimilarity(source, target, true)).toBe(false);
+      });
+    });
+
+    describe('when wildcards are not present in source', () => {
+      it('should match when source and target are equivalent', () => {
+        const source = '{ "someOtherKey": "someOtherValue", "someKey": "someValue" }';
+        const target = '{ "someKey": "someValue", "someOtherKey": "someOtherValue" }';
+
+        expect(stringSimilarity(source, target, true)).toBe(true);
+      });
+
+      it('should not match when source and target are equivalent', () => {
+        const source = '{ "someOtherKey": "someOtherValue", "someKey": "someValue" }';
+        const target = '{ "someDifferentKey": "someValue", "someOtherKey": "someOtherValue" }';
+
+        expect(stringSimilarity(source, target, true)).toBe(false);
+      });
+    });
   });
 });
