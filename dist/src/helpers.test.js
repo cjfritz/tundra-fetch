@@ -31,5 +31,4 @@ describe('helpers', function () {
     });
   });
 });
-
 //# sourceMappingURL=helpers.test.js.map

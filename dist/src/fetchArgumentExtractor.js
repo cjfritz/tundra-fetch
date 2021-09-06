@@ -41,5 +41,4 @@ exports.default = function (fetchParams) {
 };
 
 var _helpers = require('./helpers');
-
 //# sourceMappingURL=fetchArgumentExtractor.js.map

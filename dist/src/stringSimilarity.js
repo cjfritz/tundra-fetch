@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.recursiveKeySort = exports.getIsMatch = exports.UNQUOTED_MARKER_PLACEHOLDER_REGEX = exports.UNQUOTED_MARKER_PLACEHOLDER = exports.WILDCARD_MARKER = exports.WILDCARD_MARKER_ESCAPED = undefined;
+exports.replaceWildcards = exports.recursiveKeySort = exports.UNQUOTED_WILDCARD_PLACEHOLDER = exports.WILDCARD_MARKER = exports.WILDCARD_MARKER_ESCAPED = undefined;
 
 var _lodash = require('lodash.escaperegexp');
 
@@ -19,10 +19,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var WILDCARD_MARKER_ESCAPED = exports.WILDCARD_MARKER_ESCAPED = '{{\\*}}';
 var WILDCARD_MARKER = exports.WILDCARD_MARKER = '{{*}}';
-var UNQUOTED_MARKER_PLACEHOLDER = exports.UNQUOTED_MARKER_PLACEHOLDER = '"%{{*}}%"';
-var UNQUOTED_MARKER_PLACEHOLDER_REGEX = exports.UNQUOTED_MARKER_PLACEHOLDER_REGEX = /"%\{\{\*\}\}%"/g;
+var UNQUOTED_WILDCARD_PLACEHOLDER = exports.UNQUOTED_WILDCARD_PLACEHOLDER = '{{%}}';
+var searchUnquotedWildcards = new RegExp(/(([^:\s,]*)\{\{\*\}\}([^,:\s}\]]*))(?=[^,:}\]\s]*)/g);
+var searchModifiedWildcards = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
 
-var getIsMatch = exports.getIsMatch = function getIsMatch(source, target) {
+var getIsMatch = function getIsMatch(source, target) {
   var wildcardedSource = source.replace(new RegExp((0, _lodash2.default)('*'), 'g'), '\\*').replace(new RegExp((0, _lodash2.default)(WILDCARD_MARKER_ESCAPED), 'g'), '*');
 
   return _matcher2.default.isMatch(target, wildcardedSource);
@@ -42,9 +43,42 @@ var recursiveKeySort = exports.recursiveKeySort = function recursiveKeySort(data
   return data;
 };
 
-exports.default = function (source, target) {
-  var shouldSortObjectKeys = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+var replaceWildcards = exports.replaceWildcards = function replaceWildcards(value, makeParsable) {
+  var processedValue = value;
+  var regEx = makeParsable ? searchUnquotedWildcards : searchModifiedWildcards;
+  var resultArray = regEx.exec(processedValue);
 
+  while (resultArray !== null) {
+    var matchedString = resultArray[0];
+    var matchedStringIndex = regEx.lastIndex - matchedString.length;
+    var modifiedMatch = void 0;
+
+    if (makeParsable) {
+      var isWildcardInString = matchedString.startsWith('"') && matchedString.endsWith('"');
+
+      if (!isWildcardInString) {
+        modifiedMatch = matchedString.replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER).split('');
+        modifiedMatch.splice(0, 0, '"');
+        modifiedMatch.push('"');
+        modifiedMatch = modifiedMatch.join('');
+        var processedPortion = processedValue.slice(0, matchedStringIndex);
+        var remainingPortion = processedValue.slice(matchedStringIndex);
+        remainingPortion = remainingPortion.replace(matchedString, '' + modifiedMatch);
+        processedValue = processedPortion + remainingPortion;
+      }
+    } else {
+      modifiedMatch = matchedString.replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER).split('');
+      modifiedMatch.splice(0, 1);
+      modifiedMatch.pop();
+      modifiedMatch = modifiedMatch.join('');
+      processedValue = processedValue.replace(matchedString, '' + modifiedMatch);
+    }
+    resultArray = regEx.exec(processedValue);
+  }
+  return processedValue;
+};
+
+exports.default = function (source, target, shouldSortObjectKeys) {
   if (!source || (source || '') === (target || '')) {
     return source === target;
   }
@@ -60,22 +94,25 @@ exports.default = function (source, target) {
       var processedSource = '' + source;
       var processedTarget = '' + target;
 
-      processedSource = processedSource.replace(/\{\{\*\}\}(?!")/g, UNQUOTED_MARKER_PLACEHOLDER);
-
-      processedSource = JSON.parse(processedSource);
-      processedTarget = JSON.parse(processedTarget);
-
+      processedSource = replaceWildcards(processedSource, true);
+      processedSource = JSON.parse(processedSource, function (key, value) {
+        if (key.includes(WILDCARD_MARKER)) {
+          throw new Error();
+        }
+        return value;
+      });
       processedSource = JSON.stringify(recursiveKeySort(processedSource));
-      processedTarget = JSON.stringify(recursiveKeySort(processedTarget));
+      processedSource = replaceWildcards(processedSource);
 
-      processedSource = processedSource.replace(UNQUOTED_MARKER_PLACEHOLDER_REGEX, WILDCARD_MARKER);
-      processedTarget = processedTarget.replace(UNQUOTED_MARKER_PLACEHOLDER_REGEX, WILDCARD_MARKER);
+      processedTarget = JSON.parse(processedTarget);
+      processedTarget = JSON.stringify(recursiveKeySort(processedTarget));
 
       return getIsMatch(processedSource, processedTarget);
     } catch (e) {
       return false;
     }
   }
-};
 
+  return false;
+};
 //# sourceMappingURL=stringSimilarity.js.map

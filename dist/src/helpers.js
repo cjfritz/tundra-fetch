@@ -13,5 +13,4 @@ var isObject = exports.isObject = function isObject(value) {
 var isString = exports.isString = function isString(value) {
   return typeof value === 'string' || value instanceof String;
 };
-
 //# sourceMappingURL=helpers.js.map
