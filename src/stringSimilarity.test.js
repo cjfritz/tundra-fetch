@@ -43,25 +43,24 @@ describe('stringSimilarity', () => {
   });
 
   describe('replaceWildcards', () => {
+    const originalString = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, '
+      + '"d": 123{{*}}456, "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
+      + '"h": "abc{{*}}123", "i": {{*}}}';
+    const quotedString = '{"a": "{{%}}", "b": "{{%}}123", "c": "123{{%}}", '
+      + '"d": "123{{%}}456", "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
+      + '"h": "abc{{*}}123", "i": "{{%}}"}';
+
     it.each([true, false])('returns the original value argument when no matches are found', (makeParsable) => {
       const value = 'some string without wildcards';
       expect(replaceWildcards(value, makeParsable)).toBe(value);
     });
 
-    describe('when replacing unquoted wildcards', () => {
-      it('should find and replace all unquoted wildcards properly', () => {
-        const value = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, "d": 123{{*}}456, "e": "abc{{*}}123"}';
-        const expectedResult = '{'
-          + '"a":"%{{*}}%", "b":"%{{*}}%123", "c":"123%{{*}}%", "d":"123%{{*}}%456", "e": "abc{{*}}123"'
-          + '}';
-        expect(replaceWildcards(value, true)).toEqual(expectedResult);
-      });
+    it('should find and replace all unquoted wildcards properly', () => {
+      expect(replaceWildcards(originalString, true)).toEqual(quotedString);
     });
 
-    describe('when replacing quoted wildcard placeholders', () => {
-      const value = '{"a":"%{{*}}%", "b":"%{{*}}%123", "c":"123%{{*}}%", "d":"123%{{*}}%456", "e": "abc{{*}}123"}';
-      const expectedResult = '{"a":{{*}}, "b":{{*}}123, "c":123{{*}}, "d":123{{*}}456, "e": "abc{{*}}123"}';
-      expect(replaceWildcards(value)).toEqual(expectedResult);
+    it('should find and replace all quoted wildcards properly', () => {
+      expect(replaceWildcards(quotedString)).toEqual(originalString);
     });
   });
 

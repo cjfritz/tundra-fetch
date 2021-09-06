@@ -1,13 +1,12 @@
 import escapeRegExp from 'lodash.escaperegexp';
 import matcher from 'matcher';
-import { isObject, isString } from './helpers';
+import { isObject } from './helpers';
 
 export const WILDCARD_MARKER_ESCAPED = '{{\\*}}';
 export const WILDCARD_MARKER = '{{*}}';
-export const UNQUOTED_WILDCARD_PLACEHOLDER = '%{{*}}%';
-export const UNQUOTED_WILDCARD_PLACEHOLDER_REGEX = /"%\{\{\*\}\}%"/g;
-const searchUnquotedWildcards = new RegExp(/((:[^"]*)\{\{\*\}\}([^"]*))(?=([^"]*(,|\})))/g);
-const searchModifiedWildcards = new RegExp(/((:"[^"]*)(%\{\{\*\}\}%)[^,}]*)(?=[^"]*(,|\}))/g);
+export const UNQUOTED_WILDCARD_PLACEHOLDER = '{{%}}';
+const searchUnquotedWildcards = new RegExp(/(([^:\s,]*)\{\{\*\}\}([^,:\s}\]]*))(?=[^,:}\]\s]*)/g);
+const searchModifiedWildcards = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
 
 const getIsMatch = (source, target) => {
   const wildcardedSource = source
@@ -38,31 +37,40 @@ export const replaceWildcards = (value, makeParsable) => {
 
   while (resultArray !== null) {
     const matchedString = resultArray[0];
+    const matchedStringIndex = regEx.lastIndex - matchedString.length;
     let modifiedMatch;
 
     if (makeParsable) {
-      modifiedMatch = matchedString
-        .replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER)
-        .replace(/\s/g, '')
-        .split('');
-      modifiedMatch.splice(1, 0, '"');
-      modifiedMatch.push('"');
-      modifiedMatch = modifiedMatch.join('');
+      const isWildcardInString = matchedString.startsWith('"')
+        && matchedString.endsWith('"');
+
+      if (!isWildcardInString) {
+        modifiedMatch = matchedString
+          .replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER)
+          .split('');
+        modifiedMatch.splice(0, 0, '"');
+        modifiedMatch.push('"');
+        modifiedMatch = modifiedMatch.join('');
+        const processedPortion = processedValue.slice(0, matchedStringIndex);
+        let remainingPortion = processedValue.slice(matchedStringIndex);
+        remainingPortion = remainingPortion.replace(matchedString, `${modifiedMatch}`);
+        processedValue = processedPortion + remainingPortion;
+      }
     } else {
       modifiedMatch = matchedString
         .replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER)
         .split('');
-      modifiedMatch.splice(1, 1);
+      modifiedMatch.splice(0, 1);
       modifiedMatch.pop();
       modifiedMatch = modifiedMatch.join('');
+      processedValue = processedValue.replace(matchedString, `${modifiedMatch}`);
     }
-    processedValue = processedValue.replace(matchedString, `${modifiedMatch}`);
     resultArray = regEx.exec(processedValue);
   }
   return processedValue;
 };
 
-export default (source, target, shouldSortObjectKeys = false) => {
+export default (source, target, shouldSortObjectKeys) => {
   if (!source || (source || '') === (target || '')) {
     return source === target;
   }
@@ -80,7 +88,7 @@ export default (source, target, shouldSortObjectKeys = false) => {
 
       processedSource = replaceWildcards(processedSource, true);
       processedSource = JSON.parse(processedSource, (key, value) => {
-        if (isString(key) && key.includes(WILDCARD_MARKER)) {
+        if (key.includes(WILDCARD_MARKER)) {
           throw new Error();
         }
         return value;
