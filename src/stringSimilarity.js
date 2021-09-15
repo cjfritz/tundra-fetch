@@ -46,11 +46,8 @@ export const replaceWildcards = (value, makeParsable) => {
 
       if (!isWildcardInString) {
         modifiedMatch = matchedString
-          .replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER)
-          .split('');
-        modifiedMatch.splice(0, 0, '"');
-        modifiedMatch.push('"');
-        modifiedMatch = modifiedMatch.join('');
+          .replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER);
+        modifiedMatch = '"'.concat(modifiedMatch.concat('"'));
         const processedPortion = processedValue.slice(0, matchedStringIndex);
         let remainingPortion = processedValue.slice(matchedStringIndex);
         remainingPortion = remainingPortion.replace(matchedString, `${modifiedMatch}`);
@@ -58,11 +55,8 @@ export const replaceWildcards = (value, makeParsable) => {
       }
     } else {
       modifiedMatch = matchedString
-        .replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER)
-        .split('');
-      modifiedMatch.splice(0, 1);
-      modifiedMatch.pop();
-      modifiedMatch = modifiedMatch.join('');
+        .replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER);
+      modifiedMatch = modifiedMatch.substr(1, modifiedMatch.length - 2);
       processedValue = processedValue.replace(matchedString, `${modifiedMatch}`);
     }
     resultArray = regEx.exec(processedValue);

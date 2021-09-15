@@ -57,20 +57,16 @@ var replaceWildcards = exports.replaceWildcards = function replaceWildcards(valu
       var isWildcardInString = matchedString.startsWith('"') && matchedString.endsWith('"');
 
       if (!isWildcardInString) {
-        modifiedMatch = matchedString.replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER).split('');
-        modifiedMatch.splice(0, 0, '"');
-        modifiedMatch.push('"');
-        modifiedMatch = modifiedMatch.join('');
+        modifiedMatch = matchedString.replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER);
+        modifiedMatch = '"'.concat(modifiedMatch.concat('"'));
         var processedPortion = processedValue.slice(0, matchedStringIndex);
         var remainingPortion = processedValue.slice(matchedStringIndex);
         remainingPortion = remainingPortion.replace(matchedString, '' + modifiedMatch);
         processedValue = processedPortion + remainingPortion;
       }
     } else {
-      modifiedMatch = matchedString.replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER).split('');
-      modifiedMatch.splice(0, 1);
-      modifiedMatch.pop();
-      modifiedMatch = modifiedMatch.join('');
+      modifiedMatch = matchedString.replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER);
+      modifiedMatch = modifiedMatch.substr(1, modifiedMatch.length - 2);
       processedValue = processedValue.replace(matchedString, '' + modifiedMatch);
     }
     resultArray = regEx.exec(processedValue);
