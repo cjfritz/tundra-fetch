@@ -6,7 +6,7 @@ export const WILDCARD_MARKER_ESCAPED = '{{\\*}}';
 export const WILDCARD_MARKER = '{{*}}';
 export const UNQUOTED_WILDCARD_PLACEHOLDER = '{{%}}';
 const searchUnquotedWildcards = new RegExp(/(([^:\s,]*)\{\{\*\}\}([^,:\s}\]]*))(?=[^,:}\]\s]*)/g);
-const searchModifiedWildcards = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
+const searchUnquotedWildcardPlaceholders = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
 
 const getIsMatch = (source, target) => {
   const wildcardedSource = source
@@ -32,32 +32,31 @@ export const recursiveKeySort = (data) => {
 
 export const replaceWildcards = (value, makeParsable) => {
   let processedValue = value;
-  const regEx = makeParsable ? searchUnquotedWildcards : searchModifiedWildcards;
+  const regEx = makeParsable ? searchUnquotedWildcards : searchUnquotedWildcardPlaceholders;
   let resultArray = regEx.exec(processedValue);
 
   while (resultArray !== null) {
     const matchedString = resultArray[0];
     const matchedStringIndex = regEx.lastIndex - matchedString.length;
-    let modifiedMatch;
 
     if (makeParsable) {
-      const isWildcardInString = matchedString.startsWith('"')
+      const isWildcardInQuotes = matchedString.startsWith('"')
         && matchedString.endsWith('"');
 
-      if (!isWildcardInString) {
-        modifiedMatch = matchedString
+      if (!isWildcardInQuotes) {
+        const matchWithWildcardPlaceholder = matchedString
           .replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER);
-        modifiedMatch = '"'.concat(modifiedMatch.concat('"'));
+        const matchWithPlaceholderAndQuotes = '"'.concat(matchWithWildcardPlaceholder.concat('"'));
         const processedPortion = processedValue.slice(0, matchedStringIndex);
         let remainingPortion = processedValue.slice(matchedStringIndex);
-        remainingPortion = remainingPortion.replace(matchedString, `${modifiedMatch}`);
+        remainingPortion = remainingPortion.replace(matchedString, `${matchWithPlaceholderAndQuotes}`);
         processedValue = processedPortion + remainingPortion;
       }
     } else {
-      modifiedMatch = matchedString
+      const matchWithRestoredWildcard = matchedString
         .replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER);
-      modifiedMatch = modifiedMatch.substr(1, modifiedMatch.length - 2);
-      processedValue = processedValue.replace(matchedString, `${modifiedMatch}`);
+      const restoredMatch = matchWithRestoredWildcard.substr(1, matchWithRestoredWildcard.length - 2);
+      processedValue = processedValue.replace(matchedString, `${restoredMatch}`);
     }
     resultArray = regEx.exec(processedValue);
   }

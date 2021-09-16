@@ -21,7 +21,7 @@ var WILDCARD_MARKER_ESCAPED = exports.WILDCARD_MARKER_ESCAPED = '{{\\*}}';
 var WILDCARD_MARKER = exports.WILDCARD_MARKER = '{{*}}';
 var UNQUOTED_WILDCARD_PLACEHOLDER = exports.UNQUOTED_WILDCARD_PLACEHOLDER = '{{%}}';
 var searchUnquotedWildcards = new RegExp(/(([^:\s,]*)\{\{\*\}\}([^,:\s}\]]*))(?=[^,:}\]\s]*)/g);
-var searchModifiedWildcards = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
+var searchUnquotedWildcardPlaceholders = new RegExp(/(([^:\s,]*)\{\{%\}\}([^,\s}\]]*))(?=[^,}\]\s]*)/g);
 
 var getIsMatch = function getIsMatch(source, target) {
   var wildcardedSource = source.replace(new RegExp((0, _lodash2.default)('*'), 'g'), '\\*').replace(new RegExp((0, _lodash2.default)(WILDCARD_MARKER_ESCAPED), 'g'), '*');
@@ -45,29 +45,28 @@ var recursiveKeySort = exports.recursiveKeySort = function recursiveKeySort(data
 
 var replaceWildcards = exports.replaceWildcards = function replaceWildcards(value, makeParsable) {
   var processedValue = value;
-  var regEx = makeParsable ? searchUnquotedWildcards : searchModifiedWildcards;
+  var regEx = makeParsable ? searchUnquotedWildcards : searchUnquotedWildcardPlaceholders;
   var resultArray = regEx.exec(processedValue);
 
   while (resultArray !== null) {
     var matchedString = resultArray[0];
     var matchedStringIndex = regEx.lastIndex - matchedString.length;
-    var modifiedMatch = void 0;
 
     if (makeParsable) {
-      var isWildcardInString = matchedString.startsWith('"') && matchedString.endsWith('"');
+      var isWildcardInQuotes = matchedString.startsWith('"') && matchedString.endsWith('"');
 
-      if (!isWildcardInString) {
-        modifiedMatch = matchedString.replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER);
-        modifiedMatch = '"'.concat(modifiedMatch.concat('"'));
+      if (!isWildcardInQuotes) {
+        var matchWithWildcardPlaceholder = matchedString.replace(WILDCARD_MARKER, UNQUOTED_WILDCARD_PLACEHOLDER);
+        var matchWithPlaceholderAndQuotes = '"'.concat(matchWithWildcardPlaceholder.concat('"'));
         var processedPortion = processedValue.slice(0, matchedStringIndex);
         var remainingPortion = processedValue.slice(matchedStringIndex);
-        remainingPortion = remainingPortion.replace(matchedString, '' + modifiedMatch);
+        remainingPortion = remainingPortion.replace(matchedString, '' + matchWithPlaceholderAndQuotes);
         processedValue = processedPortion + remainingPortion;
       }
     } else {
-      modifiedMatch = matchedString.replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER);
-      modifiedMatch = modifiedMatch.substr(1, modifiedMatch.length - 2);
-      processedValue = processedValue.replace(matchedString, '' + modifiedMatch);
+      var matchWithRestoredWildcard = matchedString.replace(UNQUOTED_WILDCARD_PLACEHOLDER, WILDCARD_MARKER);
+      var restoredMatch = matchWithRestoredWildcard.substr(1, matchWithRestoredWildcard.length - 2);
+      processedValue = processedValue.replace(matchedString, '' + restoredMatch);
     }
     resultArray = regEx.exec(processedValue);
   }
