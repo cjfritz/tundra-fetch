@@ -1,10 +1,17 @@
 import stringSimilarity, {
   recursiveKeySort,
   replaceWildcards,
+  restoreWildcards,
 } from './stringSimilarity';
 
 describe('stringSimilarity', () => {
   const WILDCARD = '{{*}}';
+  const originalString = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, '
+      + '"d": 123{{*}}456, "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
+      + '"h": "abc{{*}}123", "i": {{*}}}';
+  const quotedString = '{"a": "{{%}}", "b": "{{%}}123", "c": "123{{%}}", '
+    + '"d": "123{{%}}456", "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
+    + '"h": "abc{{*}}123", "i": "{{%}}"}';
 
   describe('recursiveKeySort', () => {
     it('should return the argument if it is falsy', () => {
@@ -43,24 +50,24 @@ describe('stringSimilarity', () => {
   });
 
   describe('replaceWildcards', () => {
-    const originalString = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, '
-      + '"d": 123{{*}}456, "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
-      + '"h": "abc{{*}}123", "i": {{*}}}';
-    const quotedString = '{"a": "{{%}}", "b": "{{%}}123", "c": "123{{%}}", '
-      + '"d": "123{{%}}456", "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" '
-      + '"h": "abc{{*}}123", "i": "{{%}}"}';
-
-    it.each([true, false])('returns the original value argument when no matches are found', (makeParsable) => {
+    it('returns the original value argument when no matches are found', () => {
       const value = 'some string without wildcards';
-      expect(replaceWildcards(value, makeParsable)).toBe(value);
+      expect(replaceWildcards(value)).toBe(value);
     });
 
     it('should find and replace all unquoted wildcards properly', () => {
       expect(replaceWildcards(originalString, true)).toEqual(quotedString);
     });
+  });
+
+  describe('restoreWildcards', () => {
+    it('returns the original value argument when no matches are found', () => {
+      const value = 'some string with a {{*}}';
+      expect(restoreWildcards(value)).toBe(value);
+    });
 
     it('should find and replace all quoted wildcards properly', () => {
-      expect(replaceWildcards(quotedString)).toEqual(originalString);
+      expect(restoreWildcards(quotedString)).toEqual(originalString);
     });
   });
 

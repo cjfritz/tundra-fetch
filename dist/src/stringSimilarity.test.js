@@ -8,6 +8,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 describe('stringSimilarity', function () {
   var WILDCARD = '{{*}}';
+  var originalString = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, ' + '"d": 123{{*}}456, "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" ' + '"h": "abc{{*}}123", "i": {{*}}}';
+  var quotedString = '{"a": "{{%}}", "b": "{{%}}123", "c": "123{{%}}", ' + '"d": "123{{%}}456", "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" ' + '"h": "abc{{*}}123", "i": "{{%}}"}';
 
   describe('recursiveKeySort', function () {
     it('should return the argument if it is falsy', function () {
@@ -43,20 +45,24 @@ describe('stringSimilarity', function () {
   });
 
   describe('replaceWildcards', function () {
-    var originalString = '{"a": {{*}}, "b": {{*}}123, "c": 123{{*}}, ' + '"d": 123{{*}}456, "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" ' + '"h": "abc{{*}}123", "i": {{*}}}';
-    var quotedString = '{"a": "{{%}}", "b": "{{%}}123", "c": "123{{%}}", ' + '"d": "123{{%}}456", "e": "{{*}}", "f": "{{*}}abc", "g": "abc{{*}}" ' + '"h": "abc{{*}}123", "i": "{{%}}"}';
-
-    it.each([true, false])('returns the original value argument when no matches are found', function (makeParsable) {
+    it('returns the original value argument when no matches are found', function () {
       var value = 'some string without wildcards';
-      expect((0, _stringSimilarity.replaceWildcards)(value, makeParsable)).toBe(value);
+      expect((0, _stringSimilarity.replaceWildcards)(value)).toBe(value);
     });
 
     it('should find and replace all unquoted wildcards properly', function () {
       expect((0, _stringSimilarity.replaceWildcards)(originalString, true)).toEqual(quotedString);
     });
+  });
+
+  describe('restoreWildcards', function () {
+    it('returns the original value argument when no matches are found', function () {
+      var value = 'some string with a {{*}}';
+      expect((0, _stringSimilarity.restoreWildcards)(value)).toBe(value);
+    });
 
     it('should find and replace all quoted wildcards properly', function () {
-      expect((0, _stringSimilarity.replaceWildcards)(quotedString)).toEqual(originalString);
+      expect((0, _stringSimilarity.restoreWildcards)(quotedString)).toEqual(originalString);
     });
   });
 
