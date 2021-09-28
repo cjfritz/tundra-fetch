@@ -108,6 +108,9 @@ exports.default = function (source, target, shouldSortObjectKeys) {
       processedTarget = JSON.parse(processedTarget);
       processedTarget = JSON.stringify(recursiveKeySort(processedTarget));
 
+      console.log('source:', processedSource);
+      console.log('target:', processedTarget);
+
       return getIsMatch(processedSource, processedTarget);
     } catch (e) {
       return false;
