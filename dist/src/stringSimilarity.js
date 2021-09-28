@@ -108,7 +108,7 @@ exports.default = function (source, target, shouldSortObjectKeys) {
       processedTarget = JSON.parse(processedTarget);
       processedTarget = JSON.stringify(recursiveKeySort(processedTarget));
 
-      if (source.includes('ws_loadplanning_360_offerCompositeService/create/conditional')) {
+      if (source.includes("{\"scac\":\"EXC2\",\"userId\":\"demo-admin-release\",\"amount\":\"5000\"")) {
         console.log('source:', processedSource);
         console.log('target:', processedTarget);
       }
