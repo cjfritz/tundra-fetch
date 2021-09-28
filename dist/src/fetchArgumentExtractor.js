@@ -4,15 +4,13 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 exports.default = function (fetchParams) {
   var singleParameter = fetchParams && fetchParams.length === 1;
   var undefinedSecondParameter = fetchParams && fetchParams.length === 2 && fetchParams[1] === undefined;
 
   if (singleParameter || undefinedSecondParameter) {
     // Scenario: fetch('url')
-    if (isString(fetchParams[0])) {
+    if ((0, _helpers.isString)(fetchParams[0])) {
       return {
         url: fetchParams[0],
         config: {
@@ -21,7 +19,7 @@ exports.default = function (fetchParams) {
       };
     }
     // Scenario: fetch({ url: 'url', method: 'GET' })
-    if (isObject(fetchParams[0])) {
+    if ((0, _helpers.isObject)(fetchParams[0])) {
       return {
         url: fetchParams[0].url,
         config: fetchParams[0]
@@ -31,7 +29,7 @@ exports.default = function (fetchParams) {
 
   if (fetchParams && fetchParams.length === 2) {
     // Scenario: fetch('url', { method: 'GET' })
-    if (isString(fetchParams[0]) && isObject(fetchParams[1])) {
+    if ((0, _helpers.isString)(fetchParams[0]) && (0, _helpers.isObject)(fetchParams[1])) {
       return {
         url: fetchParams[0],
         config: fetchParams[1]
@@ -42,11 +40,5 @@ exports.default = function (fetchParams) {
   throw Error('Unknown fetch argument configuration: ' + fetchParams);
 };
 
-var isString = function isString(value) {
-  return typeof value === 'string' || value instanceof String;
-};
-
-var isObject = function isObject(value) {
-  return (typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' || value instanceof Object;
-};
+var _helpers = require('./helpers');
 //# sourceMappingURL=fetchArgumentExtractor.js.map
