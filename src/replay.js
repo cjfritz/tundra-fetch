@@ -30,7 +30,7 @@ export const matchingFunction = (matchingConfig, request, response) => (_url, _c
 
   const urlMatches = stringIsSimilarTo(removeURLPrefix(request.url), removeURLPrefix(url));
   const bodyMatches = config ? stringIsSimilarTo(request.content, config.body, true) : true;
-  const headersMatch = config ? stringIsSimilarTo(requestHeaders, configHeaders) : true;
+  const headersMatch = config ? stringIsSimilarTo(requestHeaders, configHeaders, true) : true;
   const methodMatches = config ? config.method === request.method : true;
 
   const everythingMatches = urlMatches && methodMatches && bodyMatches && headersMatch;

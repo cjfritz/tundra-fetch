@@ -78,7 +78,7 @@ var matchingFunction = exports.matchingFunction = function matchingFunction(matc
 
     var urlMatches = (0, _stringSimilarity2.default)((0, _removeURLPrefix2.default)(request.url), (0, _removeURLPrefix2.default)(url));
     var bodyMatches = config ? (0, _stringSimilarity2.default)(request.content, config.body, true) : true;
-    var headersMatch = config ? (0, _stringSimilarity2.default)(requestHeaders, configHeaders) : true;
+    var headersMatch = config ? (0, _stringSimilarity2.default)(requestHeaders, configHeaders, true) : true;
     var methodMatches = config ? config.method === request.method : true;
 
     var everythingMatches = urlMatches && methodMatches && bodyMatches && headersMatch;
